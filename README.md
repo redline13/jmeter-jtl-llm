@@ -16,6 +16,17 @@ A powerful tool for analyzing JMeter JTL files with the help of Language Model (
    ```sh
    pip install -r requirements.txt
 
+4. **Set Up Environment Variables:**
+
+   - Create a `.env` file in the `/WebClient` directory of the project.
+   - Add the necessary environment variables to the `.env` file. For example:
+
+    ```env
+    openAI_apikey_redline=https://platform.openai.com/api-keys <--- WebServer implementation only requires this
+    redline_apikey=https://www.redline13.com/Account/apikey
+    google_apikey=https://aistudio.google.com/app/apikey
+    ```
+
 
 ## Usage
     
