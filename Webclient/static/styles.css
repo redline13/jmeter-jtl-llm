@@ -1,0 +1,306 @@
+script {
+    display: none;
+}
+
+body {
+    font-family: 'Helvetica Neue', Arial, sans-serif; /* Updated font */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #e9ecef; /* Softer background color */
+    margin: 0;
+}
+
+pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    max-width: 100%;
+}
+
+.chat-container {
+    display: flex;
+    flex-direction: column; /* Use column layout for flexbox */
+    justify-content: space-between; /* Ensure items are spaced */
+    width: 1600px; /* Original width */
+    height: 900px; /* Ensure full height to contain the chat-box, input-box, and files divs */
+    background-color: white;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Enhanced shadow */
+    border-radius: 12px; /* Softer border radius */
+    overflow: hidden;
+}
+
+.chat-box {
+    flex-grow: 1; /* Allow chat-box to grow and take available space */
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.message {
+    margin-bottom: 20px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.message.bot {
+    color: #495057; /* Softer bot text color */
+}
+
+.message.user {
+    color: #007bff;
+    text-align: right;
+}
+
+
+.suggested-prompts {
+    height: 200px;
+    padding: 10px; /* Example padding */
+    background-color: #f0f0f0; /* Example background color */
+    border-top: 2px solid #dee2e6;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #f8f9fa; /* Light background */
+    padding: 10px; /* Added padding for spacing */
+}
+
+.suggested-prompts-additions {
+    height: 150px;
+    text-align: center;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    border-top: 2px solid #dee2e6;
+    background-color: #f8f9fa; /* Light background */
+    padding: 10px; /* Added padding for spacing */
+}
+
+.suggested-text {
+    margin-bottom: 10px; /* Space between text and buttons */
+}
+
+.suggested-prompt {
+    width: 300px; 
+    height: 130px;
+    border: 1px solid transparent; 
+    display: inline-block;
+    padding: 8px 20px; /* Adjust padding as needed */
+    margin: 5px; /* Adjust margin for spacing between buttons */
+    background-color: #6c757d; /* Button background color */
+    color: white; /* Button text color */
+    text-decoration: none; /* Remove default underline for <a> */
+    border: none; /* Remove default border */
+    border-radius: 10px; /* Rounded corners */
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: background-color 0.3s, transform 0.3s; /* Smooth transition */
+}
+
+.suggested-prompt:hover {
+    transform: scale(1.05); /* Scale effect on hover */
+    color: #495057;
+    background-color: #adb5bd; 
+    border: 1px solid transparent; 
+    border-radius: 10px;
+}
+
+
+.input-box {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-top: 2px solid #dee2e6;
+    padding: 10px; 
+    padding-left: 0px;
+    background-color: #f8f9fa; /* Light background */
+}
+
+input[type="text"] {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 10px; /* Added padding */
+    margin-right: 10px; /* Added margin */
+    border-radius: 8px; /* Added border radius */
+    background-color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px; /* Added border radius */
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.3s; /* Added transition */
+}
+
+button:hover {
+    background-color: #0056b3;
+    transform: scale(1.05); /* Added scale effect */
+}
+
+
+.file-label {
+    width: 30px;
+    height: 30px;
+    margin: 10px;
+    background: url("https://www.freeiconspng.com/thumbs/paper-clip-icon/paper-clip-icon-24.png") no-repeat center center;
+    background-size: contain;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: none;
+    background-color: #f8f9fa;;
+    transition: background-color 0.3s, transform 0.3s; /* Added transition */
+    border-radius: 50%; /* Rounded shape */
+    position: relative; /* Ensure relative positioning */
+}
+
+.file-label::after {
+    content: ''; /* Create a pseudo-element for expanding hover area */
+    position: absolute; /* Position relative to .file-label */
+    top: -8px; /* Adjust top position to expand hover area */
+    left: -8px; /* Adjust left position to expand hover area */
+    width: calc(100% + 16px); /* Expand width by padding amount */
+    height: calc(100% + 16px); /* Expand height by padding amount */
+    border-radius: 50%; /* Rounded shape */
+    background-color: transparent; /* Transparent background initially */
+    transition: background-color 0.3s; /* Smooth transition for background color */
+}
+
+.file-label:hover::after {
+    background-color: rgba(0, 0, 0, 0.1); /* Light gray background on hover */
+}
+
+
+#file-input {
+    display: none;
+}
+
+
+.bottom-container {
+    display: flex;
+    width: 100%; /* Adjust as needed */
+    height: 50px; /* Adjust as needed */
+    background-color: #f8f9fa; /* Light background for visibility */
+}
+
+.files {
+    display: flex;
+    flex-wrap: wrap;
+    flex-grow: 1;
+    border-right: 1px solid #dee2e6;;
+    justify-content: center;
+    align-items: center;
+    border-top: 2px solid #dee2e6;
+    background-color: #f8f9fa; /* Light background */
+    padding: 10px; /* Added padding for spacing */
+}
+
+.file-item {
+    width: 200px; 
+    padding: 5px;
+    height: 30px;
+    margin: 0px 10px;
+    border: 1px solid transparent; 
+    background-color: #6c757d; /* Softer color */
+    color: white; /* Text color for contrast */
+    transition: color 0.3s, background-color 0.3s; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+    white-space: nowrap;
+    text-align: center; 
+    border-radius: 15px;
+}
+
+.file-item:hover {
+    color: #495057;
+    background-color: #adb5bd; 
+    border: 1px solid transparent; 
+    border-radius: 15px;
+}
+
+.ctrl {
+    width: 400px; /* Fixed width */
+    background-color: #f8f9fa; /* Color for visibility */
+    border-left: 1px solid #dee2e6;
+    border-top: 2px solid #dee2e6;
+    padding: 10px; /* Padding for spacing */
+    color: white;
+    display: flex;
+    align-items: center; /* Center items vertically */
+    justify-content: center; /* Center items horizontally */
+}
+
+.checkbox-container {
+    width: auto;
+    padding: 0px 25px;
+    height: 30px;
+    margin: 0px 20px;
+    border: 1px solid transparent;
+    background-color: #6c757d; /* Softer color */
+    color: white; /* Text color for contrast */
+    transition: color 0.3s, background-color 0.3s;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+}
+
+.checkbox-container:hover {
+    color: #495057;
+    background-color: #adb5bd; 
+    cursor: pointer;
+}
+
+
+/* Styling for the checkbox input itself */
+.checkbox-container input[type="checkbox"] {
+    appearance: none; /* Remove default appearance */
+    -webkit-appearance: none; /* For older versions of Safari */
+    width: 16px; /* Adjust width as needed */
+    height: 16px; /* Adjust height as needed */
+    margin-right: 5px; /* Adjust spacing between checkbox and label */
+    border: 2px solid white; /* Border color */
+    border-radius: 3px; /* Rounded corners */
+    background-color: transparent; /* Transparent background */
+    cursor: pointer; /* Pointer cursor */
+}
+
+/* Styling for the checkbox when checked */
+.checkbox-container input[type="checkbox"]:checked {
+    background-color: #6c757d; /* Background color when checked */
+    border-color: white; /* Border color when checked */
+}
+
+/* Styling for the checkbox checkmark */
+.checkbox-container input[type="checkbox"]:checked::after {
+    content: ''; /* Ensure no content */
+    display: block;
+    width: 8px; /* Size of checkmark */
+    height: 8px; /* Size of checkmark */
+    background-color: white; /* Color of checkmark */
+    border-radius: 2px; /* Rounded corners */
+    position: relative;
+    top: 50%; /* Position vertically centered */
+    left: 50%; /* Position horizontally centered */
+    transform: translate(-50%, -50%); /* Center the checkmark */
+    font-size: 10px; /* Adjust font size of the checkmark */
+}
+
+/* Styling for the checkbox label */
+.checkbox-container label {
+    cursor: pointer; /* Pointer cursor */
+}

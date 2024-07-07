@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-box" id="chat-box">
+            <div class="message bot">Hello! How can I help you today?</div>
+        </div>
+        <div class="suggested-prompts" id="suggested-prompts">
+            <div class="suggested-text">Suggested Prompts</div>
+            <div class ="suggested-prompts-additions" id="suggested-prompts-additions">
+            </div>
+        </div>
+        <div class="input-box">
+            <label for="file-input" class="file-label"></label>
+            <input type="file" id="file-input">
+            <input type="text" id="user-input" placeholder="Type your message here...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+        <div class="bottom-container" id="bottom-container">
+            <div class="files" id="files">
+                
+            </div>
+            <div class="ctrl" id="ctrl">
+                <label class="checkbox-container">
+                    <input type="checkbox" id="suggestions" name="suggestions">
+                    Suggestions
+                </label>
+                <label class="checkbox-container">
+                    <input type="checkbox" id="report" name="report" >
+                    Report
+                </label>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
