@@ -29,10 +29,9 @@ A powerful tool for analyzing JMeter JTL files with the help of Language Model (
 
 
 ## Usage
-    
-4. To start the application, run:
+
+5. **Startup:**
+   - To start the application, Run:
     
     ```sh
     python Webclient/app.py
-
-
