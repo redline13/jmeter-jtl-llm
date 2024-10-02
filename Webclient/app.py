@@ -4,6 +4,7 @@ from werkzeug.utils import secure_filename
 import os
 import atexit
 import shutil
+import asyncio
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
@@ -77,9 +78,11 @@ def delete_file():
         try:
             os.remove(file_path)
             if not chatRequest.removeFileMessage(filename):
+                print(f'Error removing {filename} from messages')
                 return jsonify({'message': f'Error removing {filename} from messages'}), 500
             return jsonify({'message': f'File {filename} deleted successfully'}), 200
         except Exception as e:
+            print(f'Failed to delete file {filename} exception: {str(e)}')
             return jsonify({'error': f'Failed to delete file {filename}', 'exception': str(e)}), 500
     else:
         return jsonify({'error': 'No filename provided in request'}), 400
@@ -102,8 +105,14 @@ def get_showReport():
     showReport = chatRequest.getShowReport()
     response_data = {"showReport": showReport}
     return jsonify(response_data), 200
-    
 
+@app.route('/getBaselineGraphs', methods=['POST'])
+async def get_baseline_graphs():
+    filename = request.json.get('filename')
+    results_array = await chatRequest.generateBaselineGraphs(filename)
+    response_data = {"responseArray": results_array}
+    return jsonify(response_data), 200
+    
     
 if __name__ == '__main__':
     app.run(debug=True)

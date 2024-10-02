@@ -3,15 +3,15 @@ import random
 import subprocess
 import sys
 import os
+import threading
+import asyncio
 
-from APIs import Redline_API, OpenAI_API, Gemini_API, LLM
+from APIs import Redline_API, OpenAI_API, getFileListString
 
-csvFile1 = "/Users/mikebugden/Desktop/FordAPITest/results1.csv"
-csvFile2 = "/Users/mikebugden/Desktop/FordAPITest/results2.csv"
 
 class ChatRequest(object):
     
-    def __init__(self, app, LLM_type=LLM.GPT):
+    def __init__(self, app):
         
         self.config = {
             "retryOnError": True,
@@ -21,11 +21,7 @@ class ChatRequest(object):
 
         self.app = app
 
-        self.LLM = LLM_type
-
         self.messages = []
-
-        self.chatAPI = None
 
         self.retryAttempts = 0
 
@@ -33,57 +29,81 @@ class ChatRequest(object):
 
         self.generatedPromptSuggestions = []
 
-        if (self.LLM == LLM.Gemini):
-            self.chatAPI = Gemini_API(self.app)
-        elif (self.LLM == LLM.GPT):
-            self.chatAPI = OpenAI_API(self.app)
+        self.chatAPI = OpenAI_API(self.app)
 
         self.setMessages()
 
+    def setSystemMessage(self):
+        systemMessage = self.chatAPI.prompts["generateGraphInteractiveMain"] + getFileListString()
+        if len(self.messages) == 0:
+            self.addMessage("system", systemMessage)
+            return True
+        elif self.messages[0]["role"] == "system":
+            self.messages[0]["content"] = systemMessage
+            return True
+        else:
+            print("Error updating prompt with file changes")
+            return False
+        return False
+
     def setMessages(self):
         self.messages = []
-        startingPrompt = self.chatAPI.prompts["generatedGraphInteractiveDynamicFiles"]
-        self.addMessage("system", startingPrompt)
+        self.setSystemMessage()
+        #self.addMessage("system", startingPrompt)
         files = self.getFiles()
-        
+        #uncomment this return for assistant
+        #return
         for file in files:
             self.addFileMessage(file)
 
     def addFileMessage(self, file_name):
         file_path = os.path.join(self.app.config['UPLOAD_FOLDER'], file_name)
-        file_contents = pd.read_csv(file_path)
+        file_contents = self.createPandasDataFrame(file_path)
         self.addMessage("user", f"{file_name}: {str(file_contents)}")
-    
-    def getFiles(self, fullPath=False):
-        if fullPath:
-            return [os.path.join(self.app.config['UPLOAD_FOLDER'], file) for file in os.listdir(self.app.config['UPLOAD_FOLDER'])]
-        return os.listdir(self.app.config['UPLOAD_FOLDER'])
+        self.setSystemMessage()
+        #self.chatAPI.chatThread.
+        #Messages()
+
+    def createPandasDataFrame(self, file_path):
+        _, file_extension = os.path.splitext(file_path)
+        if file_extension.lower() in ['.xls', '.xlsx']:
+            file_contents = pd.read_excel(file_path)
+        else:
+            file_contents = pd.read_csv(file_path)
+        return file_contents
 
     def removeFileMessage(self, file_name):
         for message in self.messages:
             if message["role"] == "user" and message["content"].find(file_name) == 0:
                 self.messages.remove(message)
+                self.setSystemMessage()
+                #self.chatAPI.chatThread.updateFileMessages()
                 return True
         return False
 
     def addMessage(self, role, content):
-        """
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": "Who won the world series in 2020?"},
-            {"role": "assistant", "content": "The Los Angeles Dodgers won the World Series in 2020."},
-            {"role": "user", "content": "Where was it played?"}
-        """
         if role not in ["system", "user", "assistant"]:
             print(f"Error adding message to message history, unknown \"role\":\"{role}\"\n")
             return False
         
         messageAddition = {"role": role, "content": content}
         self.messages.append(messageAddition)
+        #comment out this return for assistant
+        return True
+
+        if role == "user" and content.find("file_name") < 0:
+            self.chatAPI.chatThread.addUserMessage(role, content)
+
         return True
     
     def makeChatRequest(self, content):
+        if content == "showMessages":
+            return str(self.messages)
         if not self.addMessage("user", content):
             return "Error creating message"
+        #assistants call
+        #response = self.chatAPI.AssistantRunRequest()
+        #normal call
         response = self.chatAPI.basicRequest(self.messages)
         if not self.addMessage("assistant", response):
             return "Error creating message"
@@ -109,7 +129,7 @@ class ChatRequest(object):
     def getGraphResponse(self, response):
         self.retryAttempts += 1
         try:
-            graphResponse = self.parseResponseInteractive(response)#self.parseGraphResponse(response)
+            graphResponse = self.parseResponseInteractive(response, True)#self.parseGraphResponse(response)
             return graphResponse
         
         except Exception as e:
@@ -145,7 +165,7 @@ class ChatRequest(object):
             return self.getGraphResponse(newResponse)
     
     #Takes a OpenAI response, replaces code block with html for interactive graph
-    def parseResponseInteractive(self, response):
+    def parseResponseInteractive(self, response, tmpFile=False):
         
         try:
             start = response.find("```python")
@@ -165,12 +185,19 @@ class ChatRequest(object):
                 import matplotlib
                 matplotlib.use('Agg')
                 ###
-                with open("generated_code.py", "w") as code_file:
-                    code_file.write(code_block)
+                if tmpFile:
+                    random_name = str(random.randint(100000, 999999))
+                    file_name = os.path.join("generatedCodeFiles", f"{random_name}.py")
+                    with open(file_name, "w") as code_file:
+                        code_file.write(code_block)
+                else:
+                    file_name = os.path.join("generatedCodeFiles", "generated_code.py")
+                    with open(file_name, "w") as code_file:
+                        code_file.write(code_block)
                 try:
                     html_str = ""
                     python_executable = sys.executable
-                    result = subprocess.run([python_executable, "generated_code.py"], check=True, capture_output=True, text=True)
+                    result = subprocess.run([python_executable, file_name], check=True, capture_output=True, text=True)
                     print("Generated script ran successfully")
                     html_str = result.stdout
                     
@@ -178,6 +205,11 @@ class ChatRequest(object):
                     print("Error running script")
                     #print(e.stderr)
                     raise ValueError(f"{e.stderr}")
+                
+                finally:
+                    if os.path.exists(file_name) and tmpFile:
+                        os.remove(file_name)
+
                 ###
                 response = response.replace(stringToReplace, html_str)
 
@@ -194,7 +226,7 @@ class ChatRequest(object):
 
             for filepath in filePaths:
                 try:
-                    df = pd.read_csv(filepath) 
+                    df = self.createPandasDataFrame(filepath)
                     columns_list = df.columns.tolist()
                     filename = os.path.basename(filepath)
                     file_dict = {filename: columns_list}
@@ -210,14 +242,14 @@ class ChatRequest(object):
             ]
             
             genConfig = {
-            "model": "gpt-4o",
-            "max_tokens" : 4000,
-            "n" : 1,
-            "stop" : None,
-            "temperature" : 0.8,
-            "top_p" : 1.0,
-            "presence_penalty" : 0.9,
-            "frequency_penalty" : 0.9
+                "model": "gpt-4o-mini",
+                "max_tokens" : 4000,
+                "n" : 1,
+                "stop" : None,
+                "temperature" : 0.8,
+                "top_p" : 1.0,
+                "presence_penalty" : 0.9,
+                "frequency_penalty" : 0.9
             }
 
             return messagesHistory, genConfig
@@ -231,7 +263,7 @@ class ChatRequest(object):
     
     def generateGraphReport(self, content):
         def generateContent():
-            fileData = []
+            #fileData = []
             filePaths = self.getFiles(True)
 
             messagesHistory = [
@@ -266,62 +298,66 @@ class ChatRequest(object):
         response = self.chatAPI.basicRequest(mh, gc)
         return response
     
+    async def generateBaselineGraphs(self, filename):
+        graphRequests = [
+            f"Can you show me a graph of JMeter threads per second for {filename}. Ensure the title of the graph is the name of the requested graph with the filename. Make sure x axis is timeStamp",
+            f"Can you show me a graph of Average JMeter Thread Elapsed Time for {filename}. Ensure the title of the graph is the name of the requested graph with the filename. Make sure x axis is timeStamp",
+            f"Can you show me a graph of Sampled HTTP Requests per Second for {filename}. Ensure the title of the graph is the name of the requested graph with the filename. Make sure x axis is timeStamp",
+            f"Can you show me a graph of Request Average Response Time for {filename}. Ensure the title of the graph is the name of the requested graph with the filename. Make sure x axis is timeStamp",
+            f"Can you show me a graph of KB Per Request per Second for {filename}. Ensure the title of the graph is the name of the requested graph with the filename. Make sure x axis is timeStamp",
+            f"Can you show me a graph of Sampled Errors per Second for {filename}. Ensure the title of the graph is the name of the requested graph with the filename. Make sure x axis is timeStamp",
+            f"Can you show me a graph of Error Average Response Time for {filename}. Ensure the title of the graph is the name of the requested graph with the filename. Make sure x axis is timeStamp",
+            f"Can you show me a graph of KB Per Error per Second for {filename}. Ensure the title of the graph is the name of the requested graph with the filename. Make sure x axis is timeStamp",
+            f"Can you show me a graph of Sampled Errors per Second for {filename}. Ensure the title of the graph is the name of the requested graph with the filename. Make sure x axis is timeStamp",
+            f"Can you show me a graph of Sampled Errors per Second for {filename}. Ensure the title of the graph is the name of the requested graph with the filename. Make sure x axis is timeStamp",
+        ]
+        
+        async def handleRequest(request):
+            #print("req started")
+            messages = list(self.messages)
+            messages.append({"role": "user", "content": request})
+            response = self.chatAPI.basicRequest(messages)
+            #print("req finished")
+            if not self.config["retryOnError"]:
+                try:
+                    graphResponse = self.parseResponseInteractive(response, True)
+                    return graphResponse
+                except Exception as e:
+                    return f"Error generating graph report. No retry attempts"
+
+            i = 0
+            successful = False
+            while i < self.config["retryAttemptsMax"] and not successful:
+                try:
+                    graphResponse = self.parseResponseInteractive(response, True)
+                    successful = True
+                    return graphResponse
+                except Exception as e:
+                    fullMsg = f"Here is your provided code: {response}. \nError in your latest attempt of generated code: {e.__str__()}. Please try to fix errors in your code and complete the request: {request}"
+                    messages.append({"role": "user", "content": fullMsg})
+                    response = self.chatAPI.basicRequest(messages)
+            if not successful:
+                numRetries = self.config["retryAttemptsMax"]
+                return f"Error generating graph report. maxRetryAttempts: {numRetries}"
+            
+        tasks = []
+        for request in graphRequests:
+            task = asyncio.create_task(handleRequest(request))
+            tasks.append(task)
+            print("added task")
+        print("gathering")
+        res = await asyncio.gather(*tasks)
+        return res
+
+        
     def setShowReport(self, showReport):
         self.config["showReport"] = showReport
 
     def getShowReport(self):
         return self.config["showReport"]
-
     
-    """
-    #Takes a OpenAI response, replaces code block with html display for saved image
-    def parseResponseImg(self, response):
-        try:
-            start = response.find("```python")
-            pyStart = response.find("import", start)
-            end = response.find("```", pyStart)
-
-            #print(f"start: {start}, pyStart: {pyStart}, end: {end}")
-            if start != -1 and pyStart != -1:
-                if end != -1:
-                    code_block = response[pyStart:end]
-                    stringToReplace = response[start:end+3]
-                else:
-                    code_block = response[pyStart:]
-                    stringToReplace = response[start:]
-                #print(f"\n\n\ncodeblock:\n{code_block}\n\n\n")
-                
-                import matplotlib
-                matplotlib.use('Agg')
-                ###
-                with open("generated_code.py", "w") as code_file:
-                    code_file.write(code_block)
-                try:
-                    python_executable = sys.executable
-                    result = subprocess.run([python_executable, "generated_code.py"], check=True, capture_output=True, text=True)
-                    print("Generated script ran successfully")
-                    print(result.stdout)
-                except subprocess.CalledProcessError as e:
-                    print("Error running script")
-                    #print(e.stderr)
-                    raise ValueError(f"{e.stderr}")
-                ###
-
-                imgString = ""
-                imgCount = code_block.count(".savefig(")
-                #print(f"\n\nIMAGECOUNT : {imgCount}\n\n")
-                #for i in range(imgCount):
-                    #/Users/mikebugden/Desktop/RedlineLLM/WebClient/WebGraphs/myPNGFile1.png
-                    #imgString += f"<img src=\"/static/WebGraphs/myPNGFile{i+1}.png?rand={random.randint(1, 999999)}\" alt=\"Image\">"
-                imgString += f"<img src=\"/static/WebGraphs/myPNGFile.png?rand={random.randint(1, 999999)}\" alt=\"Image\">"
-
-                response = response.replace(stringToReplace, imgString)
-
-                return response
-
-        except Exception as e:
-            print(f"error getting code block from ChatRequest.parseReponse() : {e}")
-            raise ValueError(f"{e}")
-    """
-
+    def getFiles(self, fullPath=False):
+        if fullPath:
+            return [os.path.join(self.app.config['UPLOAD_FOLDER'], file) for file in os.listdir(self.app.config['UPLOAD_FOLDER'])]
+        return os.listdir(self.app.config['UPLOAD_FOLDER'])
         
