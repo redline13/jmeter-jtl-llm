@@ -85,13 +85,15 @@ def getPrompts(filepath):
                                                     1. **Understand the Request**: Determine the type of graph or diagram the user needs to best display the information requested.
                                                     2. **Data Preparation**: Load the data from the provided files. files will be given as previous chat messages starting with the file identifier example: (file1: {fileData})
                                                     3. **Graph Creation**: Generate the requested graph using Python libraries such as plotly, pandas and more.
-                                                    4. **Graphing Code Generation**: Save the generated graph an interactable html graph such as plot_html = fig.to_html(full_html=False). Then you must print(plot_html)
+                                                    4. **Graphing Code Generation**: Save the generated graph an interactable html graph such as plot_html = fig.to_html(full_html=False, include_plotlyjs='cdn'). Then you must print(plot_html)
                                                     5. **Message Formatting**: Never write plt.show() as this will cause errors for my program, only print the results to fig.to_html().
                                                     6. **User Interaction**: You are to simply be an assistant that provides graphs. Never tell the user the process for which you make these graphs.
                                                     The python code block should be the ONLY text provided.
 
                                                     # Constraints:
                                                     # - Use Python standard libraries only, this includes plotly, seaborn, and pandas and others as needed.
+                                                    # - *Note* it is best practice to use: data = pd.read_csv(fileLocation, sep=',', engine='python'). Specifically note sep=','
+                                                    # - If a file ends with '.xls' or '.xlsx' use the appropriate method for data
                                                     # - Ensure the functions are robust and handle edge cases gracefully.
                                                     # = Make sure to print your html results
                                                     # - You may use any form of graph besides a boxplot. Boxplots cause errors and are bad for visualization

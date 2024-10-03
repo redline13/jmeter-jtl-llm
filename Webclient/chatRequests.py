@@ -185,13 +185,18 @@ class ChatRequest(object):
                 import matplotlib
                 matplotlib.use('Agg')
                 ###
+                directory = "generatedCodeFiles"
+                if not os.path.exists(directory):
+                    os.makedirs(directory)
+                    print(f"Directory created: {directory}")
+
                 if tmpFile:
                     random_name = str(random.randint(100000, 999999))
-                    file_name = os.path.join("generatedCodeFiles", f"{random_name}.py")
+                    file_name = os.path.join(directory, f"{random_name}.py")
                     with open(file_name, "w") as code_file:
                         code_file.write(code_block)
                 else:
-                    file_name = os.path.join("generatedCodeFiles", "generated_code.py")
+                    file_name = os.path.join(directory, "generated_code.py")
                     with open(file_name, "w") as code_file:
                         code_file.write(code_block)
                 try:

@@ -30,9 +30,6 @@ A powerful tool for analyzing any CSV files and Excel files with the help of Lan
 
 5. **Startup:**
    - To start the application, Run:
-
-5. **Startup:**
-   - To start the application, Run:
     
     ```sh
     python Webclient/app.py
