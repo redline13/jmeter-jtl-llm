@@ -10,11 +10,12 @@
     <div class="chat-container">
         <div class="chat-box" id="chat-box">
             <div class="message bot">Hello! How can I help you today?</div>
+            <!--<button id="open-file-selector">Select a File</button>-->
+            <!--<div id="file-list"></div>-->
         </div>
         <div class="suggested-prompts" id="suggested-prompts">
             <div class="suggested-text">Suggested Prompts</div>
-            <div class ="suggested-prompts-additions" id="suggested-prompts-additions">
-            </div>
+            <div class ="suggested-prompts-additions" id="suggested-prompts-additions"></div>
         </div>
         <div class="input-box">
             <label for="file-input" class="file-label"></label>
@@ -38,6 +39,7 @@
             </div>
         </div>
     </div>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

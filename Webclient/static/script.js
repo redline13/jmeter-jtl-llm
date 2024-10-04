@@ -24,30 +24,58 @@ document.addEventListener('DOMContentLoaded', () => {
     
     updateFiles();
     //addSuggestedPrompts();
+
+    document.getElementById('open-file-selector').addEventListener('click', async () => {
+        const fileList = document.getElementById('file-list');
+        fileList.innerHTML = ''; // Clear any previous list
+        fileList.style.display = 'block'; // Show the file list container
+
+        // Fetch the list of available files (you can replace this with an actual API call)
+        const files = await getFiles();
+
+        files.forEach(file => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.textContent = file;
+            fileItem.addEventListener('click', () => {
+                fileList.style.display = 'none';
+                addBaseSuggestions(file);
+            });
+            fileList.appendChild(fileItem);
+        });
+    });
 });
+
+
 
 async function sendMessage() {
     const userInput = document.getElementById('user-input').value;
     if (userInput.trim() === "") return;
+
     // Display user message
     addMessage(userInput, 'user');
 
     // Clear input
     document.getElementById('user-input').value = "";
 
-    // Call Flask server
+    // Call Flask server and get the response
+    const data = await createChatPostRequest(userInput);
+    const botResponse = data.response;
+
+    // Display bot response
+    addMessage(botResponse, 'bot');
+}
+
+async function createChatPostRequest(message) {
     const response = await fetch('/chat', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ message: userInput })
+        body: JSON.stringify({ message })
     });
-    
-    const data = await response.json();
-    const botResponse = data.response;
-    // Display bot response
-    addMessage(botResponse, 'bot');
+
+    return response.json();
 }
 
 async function uploadFile() {
@@ -69,9 +97,14 @@ async function uploadFile() {
     updateFiles();
 }
 
-async function updateFiles() {
+async function getFiles() {
     const response = await fetch('/files');
     const files = await response.json();
+    return files
+}
+
+async function updateFiles(rawReturn=false) {
+    const files = await getFiles()
 
     const filesDiv = document.getElementById('files');
     filesDiv.innerHTML = '';
@@ -115,12 +148,11 @@ async function deleteFile(filename) {
 }
 
 function addMessage(text, sender) {
-    const isInteractive = true;
     const chatBox = document.getElementById('chat-box');
     const message = document.createElement('div');
     message.classList.add('message', sender);
 
-    if (isInteractive && sender !== 'user') {
+    if (sender !== 'user') {
         setInnerHTML(message, text);
     } else {
         message.textContent = text;
@@ -223,3 +255,21 @@ async function getShowReport() {
     console.log(data.showReport);
     return data.showReport;
 }
+
+async function addBaseSuggestions(file) {
+    const response = await fetch('/getBaselineGraphs', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ filename: file })
+    });
+    
+    const data = await response.json();
+    const graphResponses = data.responseArray;
+    graphResponses.forEach(response => {
+        console.log("added message")
+        addMessage(response, 'bot')
+    });
+}
+
